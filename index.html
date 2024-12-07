@@ -121,7 +121,7 @@
         const watermarkColor = colorInput.value;
         const rawImages = Array.from(imagesInput.files);
         if (!rawImages.length) {
-          alert("Wybierz zdjecia!");
+          alert("Wybierz zdjęcia!");
           return;
         }
 
@@ -141,7 +141,7 @@
                 return 15;
               };
               const getY = (canvas, metrics, context) => {
-                return image.height - metrics.emHeightDescent - 10;
+                return image.height - metrics.emHeightAscent + 10;
               };
 
               const text = watermark.text.atPos(
