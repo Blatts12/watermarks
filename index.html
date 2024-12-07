@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Znaki wodne</title>
+    <link rel="preconnect" href="https://fonts.bunny.net" />
+    <link
+      href="https://fonts.bunny.net/css?family=architects-daughter:400"
+      rel="stylesheet"
+    />
+    <script src=" https://cdn.jsdelivr.net/npm/watermarkjs@2.1.1/dist/watermark.min.js "></script>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        min-width: 300px;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.5rem;
+        max-width: 250px;
+      }
+
+      label {
+        font-weight: bold;
+        font-size: 1.25rem;
+      }
+
+      input[type="text"] {
+        max-width: 300px;
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      input[type="file"] {
+        max-width: 300px;
+        font-size: 0.9rem;
+      }
+
+      img {
+        margin: 1rem;
+        height: 200px;
+        object-fit: cover;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      }
+
+      #watermarked {
+        padding-bottom: 2rem;
+      }
+
+      .image-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        border: 3px solid rgba(0, 0, 0, 0.5);
+        padding-bottom: 0.5rem;
+      }
+
+      #watermark-example {
+        font-family: "Architects Daughter", handwriting;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="container">
+        <label for="watermark-input">Znak wodny:</label>
+        <input id="watermark-input" type="text" value="Wianek w Ogrodzie" />
+        <span id="watermark-example">Wianek w Ogrodzie</span>
+      </div>
+      <div class="container">
+        <label for="color-input">Kolor znaku wodnego:</label>
+        <input id="color-input" type="color" value="#FFFFFF" />
+      </div>
+      <div class="container">
+        <label for="images-input">Zdjęcia:</label>
+        <span>Wybierz jedno lub wiele</span>
+        <input id="images-input" type="file" multiple />
+      </div>
+
+      <div class="container">
+        <button id="add-watermark-btn" type="button">Dodaj znak wodny</button>
+      </div>
+
+      <div id="watermarked"></div>
+    </div>
+
+    <script type="module">
+      const imagesInput = document.getElementById("images-input");
+      const watermarkInput = document.getElementById("watermark-input");
+      const colorInput = document.getElementById("color-input");
+
+      const watermarkExample = document.getElementById("watermark-example");
+      const addWatermarkButton = document.getElementById("add-watermark-btn");
+      const watermarkedContainer = document.getElementById("watermarked");
+
+      watermarkInput.addEventListener("input", () => {
+        watermarkExample.textContent = watermarkInput.value;
+      });
+
+      addWatermarkButton.addEventListener("click", () => {
+        const watermarkText = watermarkInput.value;
+        if (watermarkText == "") {
+          alert("Podaj znak wodny!");
+          return;
+        }
+
+        const watermarkColor = colorInput.value;
+        const rawImages = Array.from(imagesInput.files);
+        if (!rawImages.length) {
+          alert("Wybierz zdjecia!");
+          return;
+        }
+
+        imagesInput.value = null;
+
+        rawImages.forEach((imageFile) => {
+          const reader = new FileReader();
+
+          reader.onload = (event) => {
+            const image = new Image();
+            image.src = event.target.result;
+            image.onload = () => {
+              const fontSize = image.width * 0.0475;
+              const getX = (canvas, metrics, context) => {
+                console.log(metrics);
+                console.log(metrics.width / 2);
+                return 15;
+              };
+              const getY = (canvas, metrics, context) => {
+                return image.height - metrics.emHeightDescent - 10;
+              };
+
+              const text = watermark.text.atPos(
+                getX,
+                getY,
+                watermarkText,
+                `${fontSize}px "Architects Daughter"`,
+                watermarkColor,
+                0.8
+              );
+
+              watermark([imageFile])
+                .image(text)
+                .then((img) => {
+                  const id = window.crypto.randomUUID();
+                  const container = document.createElement("div");
+                  container.id = id;
+                  container.classList.add("image-container");
+                  container.appendChild(img);
+
+                  const saveButton = document.createElement("button");
+                  saveButton.textContent = "Zapisz";
+                  saveButton.addEventListener("click", () => {
+                    const link = document.createElement("a");
+                    link.download = `znak_${imageFile.name}`;
+                    link.href = img.src;
+                    link.click();
+                    link.remove();
+                  });
+                  container.appendChild(saveButton);
+
+                  const removeButton = document.createElement("button");
+                  removeButton.textContent = "Usuń";
+                  removeButton.addEventListener("click", () => {
+                    container.remove();
+                  });
+                  container.appendChild(removeButton);
+
+                  watermarkedContainer.appendChild(container);
+                });
+            };
+          };
+          reader.readAsDataURL(imageFile);
+        });
+      });
+    </script>
+  </body>
+</html>
