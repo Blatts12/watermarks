@@ -9,7 +9,7 @@
       href="https://fonts.bunny.net/css?family=architects-daughter:400"
       rel="stylesheet"
     />
-    <script src=" https://cdn.jsdelivr.net/npm/watermarkjs@2.1.1/dist/watermark.min.js "></script>
+
     <style>
       body {
         display: flex;
@@ -88,7 +88,12 @@
       <div class="container">
         <label for="images-input">Zdjęcia:</label>
         <span>Wybierz jedno lub wiele</span>
-        <input id="images-input" type="file" multiple />
+        <input
+          id="images-input"
+          type="file"
+          accept="image/png, image/webp, image/jpeg"
+          multiple
+        />
       </div>
 
       <div class="container">
@@ -99,6 +104,9 @@
     </div>
 
     <script type="module">
+      import Watermark from "https://cdn.jsdelivr.net/npm/@be-tech/watermarkjs@1.0.2-beta.0/+esm";
+      const WM = Watermark.default;
+
       const imagesInput = document.getElementById("images-input");
       const watermarkInput = document.getElementById("watermark-input");
       const colorInput = document.getElementById("color-input");
@@ -133,55 +141,49 @@
           reader.onload = (event) => {
             const image = new Image();
             image.src = event.target.result;
-            image.onload = () => {
+            image.onload = async () => {
               const fontSize = image.width * 0.0475;
-              const getX = (canvas, metrics, context) => {
-                console.log(metrics);
-                console.log(metrics.width / 2);
-                return 15;
-              };
-              const getY = (canvas, metrics, context) => {
-                return image.height - metrics.emHeightAscent + 10;
-              };
+              const x = 20;
+              const y = image.height - fontSize + 20;
 
-              const text = watermark.text.atPos(
-                getX,
-                getY,
-                watermarkText,
-                `${fontSize}px "Architects Daughter"`,
-                watermarkColor,
-                0.8
-              );
+              const wm = WM.load(imageFile);
+              await wm.applyText({
+                text: watermarkText,
+                coordinates: { x, y },
+                style: {
+                  size: `${fontSize}px`,
+                  family: "Architects Daughter",
+                  color: `${watermarkColor}E6`,
+                  weight: 400,
+                },
+              });
+              const container = document.createElement("div");
+              container.classList.add("image-container");
 
-              watermark([imageFile])
-                .image(text)
-                .then((img) => {
-                  const id = window.crypto.randomUUID();
-                  const container = document.createElement("div");
-                  container.id = id;
-                  container.classList.add("image-container");
-                  container.appendChild(img);
+              const img = document.createElement("img");
+              img.src = wm.result.previewUrl;
+              img.alt = imageFile.name;
+              container.appendChild(img);
 
-                  const saveButton = document.createElement("button");
-                  saveButton.textContent = "Zapisz";
-                  saveButton.addEventListener("click", () => {
-                    const link = document.createElement("a");
-                    link.download = `znak_${imageFile.name}`;
-                    link.href = img.src;
-                    link.click();
-                    link.remove();
-                  });
-                  container.appendChild(saveButton);
+              const saveButton = document.createElement("button");
+              saveButton.textContent = "Zapisz";
+              saveButton.addEventListener("click", () => {
+                const link = document.createElement("a");
+                link.download = `znak_${imageFile.name}`;
+                link.href = img.src;
+                link.click();
+                link.remove();
+              });
+              container.appendChild(saveButton);
 
-                  const removeButton = document.createElement("button");
-                  removeButton.textContent = "Usuń";
-                  removeButton.addEventListener("click", () => {
-                    container.remove();
-                  });
-                  container.appendChild(removeButton);
+              const removeButton = document.createElement("button");
+              removeButton.textContent = "Usuń";
+              removeButton.addEventListener("click", () => {
+                container.remove();
+              });
+              container.appendChild(removeButton);
 
-                  watermarkedContainer.appendChild(container);
-                });
+              watermarkedContainer.appendChild(container);
             };
           };
           reader.readAsDataURL(imageFile);
